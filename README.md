@@ -42,9 +42,22 @@ optional arguments:
   -d, --dryrun          Only emulate what would be done.
 ```
 
+## Config File Format
+pygitlab uses a config file to store credentials. See [test_addusers.csv](test_addusers.csv).
+Config Files of python-gitlab can not be used, they do not support log in with username and password.
+```
+[default]
+url= # enter gitlab url without / at the end
+email=
+password=
+ssl_verify=false
+timeout=10
+```
+
 ## CSV File Format
 Important: The CSV file must be encoded in UTF-8. The column with "1" or "0" decides wheter a user can create groups or not.
 See [test_addusers.csv](test_addusers.csv) and [test_addtogroup.csv](test_addtogroup.csv).
+
 ### Creating accounts
 ```
 mail,username,realname,1,group1,guest,group2,owner,group3,reporter,group4,guest

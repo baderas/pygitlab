@@ -1,0 +1,7 @@
+mail,username,realname,1,group1,guest,group2,owner,group3,reporter,group4,guest
+mail,username,realname,0,group1,guest,group2,owner,group3,group4,guest
+mail,username,realname,1,group1,group2,guest
+mail,username,realname,0
+mail,username,realname,1,group1
+mail,username,realname,1,group1,group2
+mail,username,realname,0,group1,group2,group3

@@ -1,0 +1,5 @@
+username,group1
+username,group1,group2
+username,group1,guest,group2,owner,group3,reporter,group4,guest
+username,group1,guest,group2,owner,group3,group4,guest
+username,group1,group2,group3
