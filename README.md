@@ -33,7 +33,7 @@ cd pygitlab.git
 
 ## Synopsis
 ```
-pygitlab.py [-h] -f CSVFILE [-a] [-g] [-d]
+pygitlab.py [-h] -f CSVFILE [-a] [-g] [-d] [-c CONFIGFILE]
 
 Reads a CSV file and adds new users to gitlab or adds users to groups.
 
@@ -44,10 +44,13 @@ optional arguments:
   -a, --adduser         Create users.
   -g, --addtogroup      Add users to groups.
   -d, --dryrun          Only emulate what would be done.
+  -c CONFIGFILE, --configfile CONFIGFILE
+                        Config file to read from
 ```
 
 ## Config File Format
-pygitlab uses a config file to store credentials. See [test_addusers.csv](test_addusers.csv).
+pygitlab uses a config file to store credentials. See [gitlab.cfg](gitlab.cfg).
+
 Config Files of python-gitlab can not be used, they do not support log in with username and password.
 ```
 [default]
