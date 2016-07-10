@@ -13,19 +13,23 @@ There is also an [issue on GitLab] (https://gitlab.com/gitlab-org/gitlab-ce/issu
 ## Usage
 
 ### Linux
-* pip3 install python-gitlab pycurl
-* git clone https://github.com/baderas/pygitlab.git
-* cd pygitlab.git 
-* chmod +x pygitlab.py
-* ./pygitlab.py -h
+```
+pip3 install python-gitlab pycurl
+git clone https://github.com/baderas/pygitlab.git
+cd pygitlab.git 
+chmod +x pygitlab.py
+./pygitlab.py -h
+```
 
 ### Windows
-* Open Admin CMD
-* "c:\Program Files\Python35\Scripts\pip.exe" install python-gitlab pycurl
-* Open Bash or CMD
-* git clone https://github.com/baderas/pygitlab.git
-* cd pygitlab.git 
-* "c:\Program Files\Python35\python.exe" pygitlab.py -h
+```
+Open Admin CMD
+"c:\Program Files\Python35\Scripts\pip.exe" install python-gitlab pycurl
+Open Bash or CMD
+git clone https://github.com/baderas/pygitlab.git
+cd pygitlab.git 
+"c:\Program Files\Python35\python.exe" pygitlab.py -h
+```
 
 ## Synopsis
 ```
