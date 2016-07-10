@@ -2,7 +2,7 @@
 A tool that for creating multiple [GitLab](https://gitlab.com/) accounts and automatically add them to groups.
 It uses [pycurl] (https://github.com/pycurl/pycurl) for account creation and the [GitLab API](http://docs.gitlab.com/ce/api/ci/README.html) via [python-gitlab] (https://github.com/gpocentek/python-gitlab) for adding accounts to user groups.
 
-## Why not using [GitLab API] (http://docs.gitlab.com/ce/api/ci/README.html) for creating accounts?
+## Why not use [GitLab API] (http://docs.gitlab.com/ce/api/ci/README.html) for creating accounts?
 The [GitLab API] (http://docs.gitlab.com/ce/api/ci/README.html) does only support creation of accounts with an password set. The HTTP interface of [GitLab](https://gitlab.com/) does suppoert this. As this is one of the main reasons for this tool, it is necessary to use the HTTP interface.
 There is also an [issue on GitLab] (https://gitlab.com/gitlab-org/gitlab-ce/issues/1051) for this.
 
