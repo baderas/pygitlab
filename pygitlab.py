@@ -142,8 +142,6 @@ def create_user(login_email, login_password, gitlab_url, full_name, user_name, u
     # start a webserver on port 8000: nc -l 8000
     # curl.setopt(pycurl.URL, "localhost:8000")
     curl.perform()
-    file = open("bla2.html", "w")
-    file.write(b.getvalue().decode('UTF-8'))
     if re.search(r'<title>The\s+change\s+you\s+requested\s+was\s+rejected\s+\(422\)</title>',
                  b.getvalue().decode('UTF-8')) is not None or \
         re.search(r'<h4>The\s+form\s+contains\s+the\s+following\s+errors:</h4>',
