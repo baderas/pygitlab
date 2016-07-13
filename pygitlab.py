@@ -275,8 +275,12 @@ logger.addHandler(handler)
 
 gl = None
 
-cp = configparser.ConfigParser()
-cp.read(args.configfile)
+try:
+    cp = configparser.ConfigParser()
+    cp.read(args.configfile)
+except TypeError:
+    logger.error("Can't read config from %s. Please specify another config file with -c <path>." % args.configfile)
+    exit(-1)
 try:
     password = cp.get("default", "password")
     email = cp.get("default", "email")
