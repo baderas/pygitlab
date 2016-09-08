@@ -1,5 +1,5 @@
 # pygitlab
-A tool that for creating multiple [GitLab](https://gitlab.com/) accounts and automatically add them to groups.
+A tool for creating multiple [GitLab](https://gitlab.com/) accounts and automatically add them to groups.
 It uses [pycurl] (https://github.com/pycurl/pycurl) for account creation and the [GitLab API](http://docs.gitlab.com/ce/api/ci/README.html) via [python-gitlab] (https://github.com/gpocentek/python-gitlab) for adding accounts to user groups.
 
 ## Why not use [GitLab API] (http://docs.gitlab.com/ce/api/ci/README.html) for creating accounts?
