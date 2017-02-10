@@ -5,20 +5,24 @@ import argparse
 import logging
 import csv
 import urllib
-import tempfile
-import io
-import pycurl
+import http.cookiejar
 import re
 import configparser
 
 __author__ = 'Andreas Bader'
 __version__ = "0.01"
 
+# C:\Python36\lib\site-packages\requests\packages\urllib3\connectionpool.py:852: InsecureRequestWarning: Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+#   InsecureRequestWarning)
+# can safely be ignored
+
+
 # https://github.com/baderas/pygitlab.git
 
 # requires python-gitlab3 https://github.com/alexvh/python-gitlab3
 # requires pycurl
-# install with pip (python3 edition!): pip3 install python-gitlab pycurl
+# certifi
+# install with pip (python3 edition!): pip3 install python-gitlab pycurl certifi
 
 # This tool has two functionalities:
 # 1) It takes a CSV file as argument and creates the users and adds them to the given groups
@@ -43,125 +47,97 @@ permission_types = {
 
 def create_user(login_email, login_password, gitlab_url, full_name, user_name, user_email, can_create_group, log):
     username_encoded = urllib.parse.quote_plus(user_name.encode("UTF-8"))
-    cookie1 = tempfile.NamedTemporaryFile()
-    cookie2 = tempfile.NamedTemporaryFile()
-    b = io.BytesIO()
-    curl = pycurl.Curl()
-    curl.setopt(pycurl.URL, gitlab_url)
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.FOLLOWLOCATION, 1)
-    curl.setopt(pycurl.COOKIEFILE, cookie1.name)
-    curl.setopt(pycurl.COOKIEJAR, cookie2.name)
-    curl.setopt(pycurl.MAXREDIRS, 5)
-    curl.setopt(pycurl.SSL_VERIFYPEER, 0)
-    curl.setopt(pycurl.HEADER, 1)
-    curl.perform()
+
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    response = opener.open(gitlab_url)
+    content = response.read()
     # searching for authenticity token
-    auth_token = re.search(r'<meta\s+name="csrf-token"\s+content=".*"\s+/>', b.getvalue().decode('UTF-8'))
+    auth_token = re.search(r'<meta\s+name="csrf-token"\s+content=".*"\s+/>', content.decode('UTF-8'))
     if auth_token is not None:
         auth_token = auth_token.group().split('content="')[1].split('"')[:-1]
         auth_token = '-'.join(auth_token)  # if there is a " in the token
     else:
         log.error("Can not find authenticity token. User %s can not be created." % user_name)
+        opener.close()
         return False
-    b.close()
-    # logging in
-    b = io.BytesIO()
+
     encoded_data = urllib.parse.urlencode({"utf8": "&#x2713;", "authenticity_token": auth_token,
                                            "user[login]": login_email, "user[password]": login_password,
-                                           "user[remember_me]": 1})
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.POSTFIELDS, encoded_data)
-    curl.setopt(pycurl.REFERER, gitlab_url)
-    curl.setopt(pycurl.URL, gitlab_url + "/users/sign_in")
-    curl.perform()
-    if re.search(r'Invalid\s+Login\s+or\s+password.', b.getvalue().decode('UTF-8')) is not None:
+                                           "user[remember_me]": 1}).encode('UTF-8')
+    response = opener.open(gitlab_url + "/users/sign_in", encoded_data)
+    content = response.read()
+    if re.search(r'Invalid\s+Login\s+or\s+password.', content.decode('UTF-8')) is not None:
         log.error("Login failed.")
+        opener.close()
         return False
     # test if it was created
-    b = io.BytesIO()
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.HTTPGET, True)
-    curl.setopt(pycurl.REFERER, gitlab_url)
-    curl.setopt(pycurl.URL, gitlab_url + "/admin/users/" + username_encoded)
-    curl.perform()
-    if re.search(r'^\s+404\s+', b.getvalue().decode('UTF-8'), re.MULTILINE) is None:
+    existing = True
+    try:
+        response = opener.open(gitlab_url + "/admin/users/" + username_encoded)
+    except urllib.error.HTTPError:
+        existing = False
+    content = response.read()
+    if existing:
         log.error("User %s already exists." % user_name)
-        b.close()
+        # b.close()
+        opener.close()
         return False
-    b.close()
     # moving to new user page
-    b = io.BytesIO()
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.HTTPGET, True)
-    curl.setopt(pycurl.REFERER, gitlab_url + "/admin/users/" + user_name)
-    curl.setopt(pycurl.URL, gitlab_url + "/admin")
-    curl.perform()
-    b.close()
-    b = io.BytesIO()
-    curl.setopt(pycurl.HTTPGET, True)
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.REFERER, gitlab_url + "/admin")
-    curl.setopt(pycurl.URL, gitlab_url + "/admin/users/new")
-    curl.perform()
+    response = opener.open(gitlab_url + "/admin/")
+    content = response.read()
+    response = opener.open(gitlab_url + "/admin/users/new")
+    content = response.read()
     # here a new authenticity token for the form is generated, ty to get it
     auth_token_for_form = re.search(r'<input\s+type="hidden"\s+name="authenticity_token"\s+value=".*"\s+/>',
-                                    b.getvalue().decode('UTF-8'))
+                                    content.decode('UTF-8'))
     if auth_token_for_form is not None:
         auth_token_for_form = auth_token_for_form.group().split('value="')[1].split('"')[:-1]
         auth_token_for_form = '-'.join(auth_token_for_form)  # if there is a " in the token
     else:
         log.error("Can not find authenticity form token. User %s can not be created" % user_name)
+        opener.close()
         return False
-    b.close()
-    b = io.BytesIO()
-    curl.setopt(pycurl.CONNECTTIMEOUT, 10)
-    curl.setopt(pycurl.TIMEOUT, 10)
-    curl.setopt(pycurl.POST, True)
-    curl.setopt(pycurl.HTTPHEADER, ['Content-Type: multipart/form-data', 'Origin: ' + gitlab_url])
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(curl.HTTPPOST, [
-                                            ("utf8", "&#x2713;"),
-                                            ("authenticity_token", auth_token_for_form),
-                                            ("user[name]", full_name.encode("UTF-8")),
-                                            ("user[username]", user_name.encode("UTF-8")),
-                                            ("user[email]", user_email.encode("UTF-8")),
-                                            ("user[projects_limit]", "50"),
-                                            ("user[can_create_group]", can_create_group),
-                                            ("user[admin]", "0"),
-                                            ("user[external]", "0"),
-                                            ("user[skype]", ""),
-                                            ("user[linkedin]", ""),
-                                            ("user[twitter]", ""),
-                                            ("user[website_url]", "")
-                                            ])
-    curl.setopt(pycurl.REFERER, gitlab_url + "/admin/users/new")
-    curl.setopt(pycurl.URL, gitlab_url + "/admin/users")
+    encoded_data = urllib.parse.urlencode({"utf8": "&#x2713;", "authenticity_token": auth_token_for_form,
+                                            "user[name]": full_name.encode("UTF-8"),
+                                            "user[username]": user_name.encode("UTF-8"),
+                                            "user[email]": user_email.encode("UTF-8"),
+                                            "user[projects_limit]": "50",
+                                            "user[can_create_group]": can_create_group,
+                                            "user[admin]": "0",
+                                            "user[external]": "0",
+                                            "user[skype]": "",
+                                            "user[linkedin]": "",
+                                            "user[twitter]": "",
+                                            "user[website_url]": ""}).encode('UTF-8')
+    response = opener.open(gitlab_url + "/admin/users", encoded_data)
+    content = response.read()
+
     # Use the following to debug:
     # look at a request from chromium/firefox
     # start a webserver on port 8000: nc -l 8000
     # curl.setopt(pycurl.URL, "localhost:8000")
-    curl.perform()
+    # curl.perform()
     if re.search(r'<title>The\s+change\s+you\s+requested\s+was\s+rejected\s+\(422\)</title>',
-                 b.getvalue().decode('UTF-8')) is not None or \
+                 content.decode('UTF-8')) is not None or \
         re.search(r'<h4>The\s+form\s+contains\s+the\s+following\s+errors:</h4>',
-                  b.getvalue().decode('UTF-8')) is not None:
+                 content.decode('UTF-8')) is not None:
         log.error("User %s can not be created." % user_name)
+        opener.close()
         return False
-    b.close()
     # test if it was created
-    b = io.BytesIO()
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.HTTPGET, True)
-    curl.setopt(pycurl.REFERER, gitlab_url + "/admin/users")
-    curl.setopt(pycurl.URL, gitlab_url + "/admin/users/" + username_encoded)
-    curl.perform()
-    if re.search(r'^\s+404\s+', b.getvalue().decode('UTF-8')) is not None:
+    existing = True
+    try:
+        response = opener.open(gitlab_url + "/admin/users/" + username_encoded)
+    except urllib.error.HTTPError:
+        existing = False
+    content = response.read()
+    if not existing:
         log.error("User %s was not created." % user_name)
-        b.close()
+        opener.close()
         return False
     log.info("User %s was successfully created." % user_name)
-    b.close()
+    opener.close()
     return True
 
 
